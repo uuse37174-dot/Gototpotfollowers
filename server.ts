@@ -528,7 +528,9 @@ app.post('/api/telegram/connect', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Telegram Bot token is required' });
     }
 
-    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
+      signal: AbortSignal.timeout(8000)
+    });
     const data = await response.json().catch(() => ({ ok: false, description: 'Failed to contact Telegram API' }));
 
     if (!data.ok) {
@@ -562,7 +564,8 @@ app.post('/api/telegram/connect', async (req, res) => {
     if (baseUrl.startsWith('https://')) {
       try {
         const whRes = await fetch(
-          `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookEndpoint)}`
+          `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookEndpoint)}`,
+          { signal: AbortSignal.timeout(6000) }
         );
         const whData = await whRes.json();
         if (whData.ok) {
