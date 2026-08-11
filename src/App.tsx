@@ -131,42 +131,90 @@ export default function App() {
     }
   };
 
+  // Disconnect Bot
+  const handleDisconnectBot = async () => {
+    if (!config) return;
+    try {
+      await fetch('/api/telegram/disconnect', { method: 'POST' }).catch(() => {});
+      const disconnectedConfig: BotConfig = {
+        ...config,
+        token: '',
+        botUsername: '',
+        isConnected: false,
+        webhookActive: false,
+        updatedAt: new Date().toISOString()
+      };
+      setConfig(disconnectedConfig);
+      saveConfigToServer(disconnectedConfig, true);
+    } catch (err) {
+      console.error('Error disconnecting bot:', err);
+    }
+  };
+
   // Connect Telegram Token
   const handleConnectToken = async (token: string) => {
+    const cleanToken = token.trim();
+    if (!cleanToken) return;
+
     setIsConnectLoading(true);
     setConnectError(null);
+
+    // 1. Attempt server connection
     try {
       const res = await fetch('/api/telegram/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ token: cleanToken })
       });
 
       const contentType = res.headers.get('content-type') || '';
       let data: any = {};
       if (contentType.includes('application/json')) {
         data = await res.json();
-      } else {
-        const textResponse = await res.text();
-        throw new Error(
-          res.ok
-            ? 'Server returned non-JSON response.'
-            : `Server error (${res.status}): ${textResponse.replace(/<[^>]*>?/gm, '').slice(0, 120)}`
-        );
       }
 
-      if (data.success && data.config) {
+      if (res.ok && data.success && data.config) {
         setConfig(data.config);
         setIsConnectModalOpen(false);
-
         if (auth.currentUser) {
           saveConfigToServer(data.config, true);
         }
+        return;
+      }
+    } catch (err) {
+      console.warn('Server endpoint error, proceeding to direct client validation fallback:', err);
+    }
+
+    // 2. Direct Client-Side Fallback via Telegram Bot API
+    try {
+      const tgRes = await fetch(`https://api.telegram.org/bot${cleanToken}/getMe`);
+      const tgData = await tgRes.json();
+
+      if (tgData && tgData.ok && tgData.result) {
+        const botUser = tgData.result;
+        const newConfig: BotConfig = {
+          ...(config || {
+            id: String(botUser.id),
+            welcomeText: '👋 Welcome to Telegram Bot Controller!',
+            rootOptionIds: [],
+            options: {},
+            updatedAt: new Date().toISOString()
+          }),
+          id: String(botUser.id),
+          token: cleanToken,
+          botName: botUser.first_name || 'Telegram Bot',
+          botUsername: botUser.username || 'bot',
+          isConnected: true,
+        };
+
+        setConfig(newConfig);
+        setIsConnectModalOpen(false);
+        saveConfigToServer(newConfig, true);
       } else {
-        setConnectError(data.error || 'Failed to connect Telegram Bot token.');
+        throw new Error(tgData?.description || 'Invalid Telegram Bot Token. Please check token from @BotFather.');
       }
     } catch (err: any) {
-      setConnectError(`Connection error: ${err.message}`);
+      setConnectError(`Connection failed: ${err.message || 'Invalid Token'}`);
     } finally {
       setIsConnectLoading(false);
     }
@@ -314,6 +362,7 @@ export default function App() {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenDeployModal={() => setIsDeployModalOpen(true)}
         onSignOut={handleSignOut}
+        onDisconnectBot={handleDisconnectBot}
       />
 
       {/* Main Layout */}

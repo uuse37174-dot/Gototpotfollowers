@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Key, LayoutTemplate, CheckCircle2, User, LogOut, Server } from 'lucide-react';
+import { Bot, Key, LayoutTemplate, CheckCircle2, User, LogOut, Server, Unplug } from 'lucide-react';
 import { BotConfig } from '../types';
 import { User as FirebaseUser } from '../lib/firebase';
 
@@ -11,6 +11,7 @@ interface HeaderProps {
   onOpenAuthModal: () => void;
   onOpenDeployModal: () => void;
   onSignOut: () => void;
+  onDisconnectBot?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,13 +21,16 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTemplateModal,
   onOpenAuthModal,
   onOpenDeployModal,
-  onSignOut
+  onSignOut,
+  onDisconnectBot
 }) => {
+  const isConnected = !!(config?.isConnected && config?.token);
+
   return (
     <header className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-slate-800 sticky top-4 z-30">
       <div className="flex flex-wrap items-center justify-between gap-4">
         
-        {/* Brand Title */}
+        {/* Brand Title & Dynamic Connection Badge */}
         <div className="flex items-center space-x-3.5">
           <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
             <Bot className="w-6 h-6" />
@@ -36,9 +40,17 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="text-xl font-bold tracking-tight text-slate-900">
                 Telegram Bot Builder
               </h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Live & Connected
-              </span>
+              {isConnected ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Live & Connected: @{config?.botUsername || config?.botName}</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-300 flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  <span>Not Connected (Demo Mode)</span>
+                </span>
+              )}
             </div>
             <p className="text-xs font-medium text-slate-500">
               Create interactive Telegram bot menus with zero code
@@ -67,27 +79,40 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Templates</span>
           </button>
 
-          {/* Bot Token Connection Status */}
-          <button
-            onClick={onOpenConnectModal}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
-              config?.isConnected
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {config?.isConnected ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span>Bot: @{config.botUsername || config.botName}</span>
-              </>
-            ) : (
-              <>
-                <Key className="w-4 h-4 text-white" />
-                <span>Connect Token</span>
-              </>
+          {/* Bot Token Connection Status & Action Buttons */}
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={onOpenConnectModal}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                isConnected
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {isConnected ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Change / Switch Bot</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4 text-white" />
+                  <span>Connect Bot Token</span>
+                </>
+              )}
+            </button>
+
+            {isConnected && onDisconnectBot && (
+              <button
+                onClick={onDisconnectBot}
+                title="Disconnect Bot"
+                className="flex items-center space-x-1 px-2.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold transition-all"
+              >
+                <Unplug className="w-4 h-4" />
+                <span className="hidden sm:inline">Disconnect</span>
+              </button>
             )}
-          </button>
+          </div>
 
           {/* User Account / Firebase Auth */}
           {currentUser ? (

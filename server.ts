@@ -88,10 +88,10 @@ const BOT_CONFIG_FILE = isServerless
 // Default initial config
 const defaultConfig: BotConfig = {
   id: 'demo_bot',
-  token: '123456789:AAEFakeDemoBotTokenForTestingOnlyXYZ',
+  token: '',
   botName: 'Demo Controller Bot',
-  botUsername: 'DemoControllerBot',
-  isConnected: true,
+  botUsername: '',
+  isConnected: false,
   webhookUrl: 'https://localhost:3000/api/telegram/webhook/demo_bot',
   webhookActive: false,
   welcomeText: '👋 Welcome to *Demo Controller Bot*! Select an option below to navigate options & sub-options:',
@@ -597,6 +597,30 @@ app.post('/api/telegram/connect', async (req, res) => {
       success: false,
       error: `Failed to connect to Telegram API: ${error?.message || 'Network error'}`
     });
+  }
+});
+
+// Disconnect Telegram Bot Token
+app.post('/api/telegram/disconnect', async (req, res) => {
+  try {
+    if (activeBotConfig.token) {
+      try {
+        await fetch(`https://api.telegram.org/bot${activeBotConfig.token}/deleteWebhook?drop_pending_updates=false`).catch(() => {});
+      } catch (e) {}
+    }
+    activeBotConfig = {
+      ...activeBotConfig,
+      token: '',
+      botUsername: '',
+      isConnected: false,
+      webhookActive: false,
+      updatedAt: new Date().toISOString()
+    };
+    saveBotConfig(activeBotConfig);
+    addLog('start', 'Telegram Bot disconnected.');
+    return res.json({ success: true, config: activeBotConfig });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message || 'Failed to disconnect' });
   }
 });
 
