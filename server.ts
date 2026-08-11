@@ -37,27 +37,35 @@ app.use((req, res, next) => {
   }
 
   // Safe path normalization for Vercel Rewrites
-  if (isServerless) {
-    const rawUrl = req.url || '';
-    const xForwardedUri = req.headers['x-forwarded-uri'] as string;
-    const xOriginalUrl = req.headers['x-original-url'] as string;
-    const xMatchedPath = req.headers['x-matched-path'] as string;
+  let targetPath = req.url || '/';
 
-    let targetPath = rawUrl;
-    if (xForwardedUri && xForwardedUri.startsWith('/api')) {
-      targetPath = xForwardedUri;
-    } else if (xOriginalUrl && xOriginalUrl.startsWith('/api')) {
-      targetPath = xOriginalUrl;
-    } else if (xMatchedPath && xMatchedPath.startsWith('/api') && !xMatchedPath.includes('index')) {
-      targetPath = xMatchedPath;
+  // Check query params if route came from Vercel slug/path
+  if (req.query) {
+    const slug = req.query.slug;
+    const pathQuery = req.query.path;
+    if (slug) {
+      const slugParts = Array.isArray(slug) ? slug.join('/') : String(slug);
+      targetPath = `/api/${slugParts}`;
+    } else if (pathQuery) {
+      const p = Array.isArray(pathQuery) ? pathQuery.join('/') : String(pathQuery);
+      targetPath = p.startsWith('/api') ? p : `/api/${p.replace(/^\//, '')}`;
     }
-
-    if (!targetPath.startsWith('/api') && targetPath !== '/') {
-      targetPath = '/api' + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
-    }
-
-    req.url = targetPath;
   }
+
+  // Check headers for Vercel original path
+  const xForwardedUri = req.headers['x-forwarded-uri'] as string;
+  if (xForwardedUri && xForwardedUri.startsWith('/api')) {
+    targetPath = xForwardedUri;
+  }
+
+  // Strip trailing query parameters for Express routing
+  const cleanUrl = targetPath.split('?')[0];
+  if (!cleanUrl.startsWith('/api') && cleanUrl !== '/') {
+    req.url = '/api' + (cleanUrl.startsWith('/') ? cleanUrl : '/' + cleanUrl);
+  } else {
+    req.url = cleanUrl;
+  }
+
   next();
 });
 
@@ -790,18 +798,25 @@ app.post('/api/bot/chat-simulate', (req, res) => {
   res.status(400).json({ success: false, error: 'Invalid simulation action' });
 });
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ success: false, error: `API endpoint not found: ${req.method} ${req.originalUrl || req.url}` });
+// Catch all unmatched routes and ensure JSON response
+app.use((req, res) => {
+  if (!res.headersSent) {
+    res.status(404).json({
+      success: false,
+      error: `API endpoint not found: ${req.method} ${req.url}`
+    });
+  }
 });
 
 // Global Error Handler to guarantee clean JSON responses
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Express API Error:', err);
-  res.status(500).json({
-    success: false,
-    error: err?.message || 'Internal server error occurred.'
-  });
+  if (!res.headersSent) {
+    res.status(500).json({
+      success: false,
+      error: err?.message || 'Internal server error occurred.'
+    });
+  }
 });
 
 // Start Express + Vite Middleware
