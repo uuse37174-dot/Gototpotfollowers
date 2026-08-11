@@ -1,0 +1,166 @@
+import { BotTemplate, MenuOption } from './types';
+
+export const BOT_TEMPLATES: BotTemplate[] = [
+  {
+    id: 'ecommerce',
+    name: 'E-Commerce & Product Catalog',
+    description: 'Catalog with categories, sub-products, high-res photos, and direct checkout links.',
+    iconName: 'ShoppingBag',
+    welcomeText: '👋 Welcome to *TechNova Store*! Choose a category below to explore our products, check prices, or view specs.',
+    welcomeImage: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80',
+    options: [
+      {
+        id: 'opt_electronics',
+        parentId: null,
+        buttonLabel: '💻 Electronics & Tech',
+        responseText: 'Explore our latest gadgets and electronics below. Select an item for details and order links:',
+        imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80',
+        childOptionIds: ['opt_laptop', 'opt_phone'],
+      },
+      {
+        id: 'opt_laptop',
+        parentId: 'opt_electronics',
+        buttonLabel: '⚡ UltraBook Pro 15"',
+        responseText: '🚀 *UltraBook Pro 15"* - NextGen M3 Chip, 32GB RAM, 1TB SSD. Supercharged performance for developers & creators.\n\n💰 Price: $1,299',
+        imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80',
+        linkUrl: 'https://example.com/checkout/ultrabook',
+        linkLabel: '🛒 Buy UltraBook Now',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_phone',
+        parentId: 'opt_electronics',
+        buttonLabel: '📱 NovaPhone 12',
+        responseText: '📱 *NovaPhone 12* - OLED 120Hz display, 108MP Quad Camera, All-Day Battery.\n\n💰 Price: $899',
+        imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop&q=80',
+        linkUrl: 'https://example.com/checkout/novaphone',
+        linkLabel: '🛒 Buy NovaPhone Now',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_fashion',
+        parentId: null,
+        buttonLabel: '👕 Apparel & Accessories',
+        responseText: 'Check out our new season clothing and accessories collection:',
+        imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=80',
+        childOptionIds: ['opt_hoodie'],
+      },
+      {
+        id: 'opt_hoodie',
+        parentId: 'opt_fashion',
+        buttonLabel: '🧥 Developer Premium Hoodie',
+        responseText: '🔥 *Developer Premium Hoodie* - 100% Organic Cotton, Heavyweight Fleece.\n\n💰 Price: $59',
+        imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
+        linkUrl: 'https://example.com/checkout/hoodie',
+        linkLabel: '🛍️ Order Hoodie',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_support',
+        parentId: null,
+        buttonLabel: '💬 Contact Support',
+        responseText: 'Need help with an existing order? Our customer support team is available 24/7.',
+        linkUrl: 'https://t.me/support_demo',
+        linkLabel: '💬 Chat with Representative',
+        childOptionIds: [],
+      }
+    ]
+  },
+  {
+    id: 'support_faq',
+    name: 'Customer Support & FAQ Bot',
+    description: 'Help menu with categorized FAQ sub-options, resolution steps, and direct ticket links.',
+    iconName: 'HelpCircle',
+    welcomeText: '🤖 *Support Bot*: How can we assist you today? Select a help topic below:',
+    options: [
+      {
+        id: 'opt_billing',
+        parentId: null,
+        buttonLabel: '💳 Billing & Refunds',
+        responseText: 'Select a common billing issue or question:',
+        childOptionIds: ['opt_refund_policy', 'opt_update_card'],
+      },
+      {
+        id: 'opt_refund_policy',
+        parentId: 'opt_billing',
+        buttonLabel: '📄 Refund Policy Details',
+        responseText: 'ℹ️ We offer a 14-day no-questions-asked refund policy for all digital subscriptions. Refunds take 3-5 business days to process.',
+        linkUrl: 'https://example.com/refunds',
+        linkLabel: '🌐 Request Refund Online',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_update_card',
+        parentId: 'opt_billing',
+        buttonLabel: '💳 Update Payment Method',
+        responseText: 'To update your card on file securely, open your Billing Portal using the link below:',
+        linkUrl: 'https://example.com/billing-portal',
+        linkLabel: '🔑 Open Billing Portal',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_tech_issue',
+        parentId: null,
+        buttonLabel: '🛠️ Technical Troubleshooting',
+        responseText: 'What technical difficulty are you experiencing?',
+        childOptionIds: ['opt_login_help'],
+      },
+      {
+        id: 'opt_login_help',
+        parentId: 'opt_tech_issue',
+        buttonLabel: '🔐 I cannot log into my account',
+        responseText: '🔑 If you forgot your password, click the reset link below or contact support if your 2FA token is lost.',
+        linkUrl: 'https://example.com/reset-password',
+        linkLabel: '🔑 Reset Password',
+        childOptionIds: [],
+      }
+    ]
+  },
+  {
+    id: 'restaurant',
+    name: 'Restaurant & Dining Menu',
+    description: 'Interactive food menu with course categories, mouth-watering photos, and table booking links.',
+    iconName: 'Utensils',
+    welcomeText: '🍕 Welcome to *Bella Italia Bistro*! Explore our authentic Italian menu below or reserve a table:',
+    welcomeImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+    options: [
+      {
+        id: 'opt_pizzas',
+        parentId: null,
+        buttonLabel: '🍕 Artisanal Pizzas',
+        responseText: 'Wood-fired sourdough pizzas crafted with authentic Italian ingredients:',
+        imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=80',
+        childOptionIds: ['opt_margherita', 'opt_truffe_pizza'],
+      },
+      {
+        id: 'opt_margherita',
+        parentId: 'opt_pizzas',
+        buttonLabel: '🧀 Classic Margherita D.O.P.',
+        responseText: '🍅 *Margherita D.O.P.* - San Marzano tomatoes, fresh mozzarella di bufala, basil, extra virgin olive oil.\n\n💰 $16.50',
+        imageUrl: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=800&auto=format&fit=crop&q=80',
+        linkUrl: 'https://example.com/order/margherita',
+        linkLabel: '🛒 Order Pizza Online',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_truffe_pizza',
+        parentId: 'opt_pizzas',
+        buttonLabel: '🍄 Black Truffle & Prosciutto',
+        responseText: '✨ *Black Truffle Special* - Black truffle cream, prosciutto di Parma, wild mushrooms, fior di latte.\n\n💰 $22.00',
+        imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&auto=format&fit=crop&q=80',
+        linkUrl: 'https://example.com/order/truffle',
+        linkLabel: '🛒 Order Pizza Online',
+        childOptionIds: [],
+      },
+      {
+        id: 'opt_reserve',
+        parentId: null,
+        buttonLabel: '🍷 Reserve a Table',
+        responseText: 'Book a table for tonight or upcoming special events at Bella Italia Bistro!',
+        linkUrl: 'https://example.com/reservations',
+        linkLabel: '📅 Table Booking Calendar',
+        childOptionIds: [],
+      }
+    ]
+  }
+];

@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profiles and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "botConfigs": {
+      "title": "Bot Configurations",
+      "description": "Telegram Bot menu trees and saved settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "token": { "type": "string text" },
+        "botName": { "type": "string" },
+        "botUsername": { "type": "string" },
+        "welcomeText": { "type": "string text" },
+        "welcomeImage": { "type": "string" },
+        "rootOptionIds": { "type": "array" },
+        "options": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "updatedAt"]
+    }
+  }
+}

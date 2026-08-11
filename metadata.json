@@ -1,0 +1,6 @@
+{
+  "name": "Telegram Bot Controller",
+  "description": "Connect your Telegram bot token, design dynamic interactive button menus with sub-options, attach images and links, test in a live chat simulator, and host real webhooks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
