@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import { BotConfig, MenuOption, WebhookLog } from './src/types';
+import type { BotConfig, MenuOption, WebhookLog } from './src/types';
 
 dotenv.config();
 
@@ -17,41 +17,61 @@ const isServerless = Boolean(
   process.env.AWS_EXECUTION_ENV
 );
 
-app.use(express.json({ limit: '10mb' }));
+// Safe body normalization & Route mapping middleware for Vercel Serverless
+app.use((req, res, next) => {
+  // Safe body normalization
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        req.body = {};
+      }
+    } else if (Buffer.isBuffer(req.body)) {
+      try {
+        req.body = JSON.parse(req.body.toString('utf-8'));
+      } catch (e) {
+        req.body = {};
+      }
+    }
+  }
+
+  // Safe path normalization for Vercel Rewrites
+  if (isServerless) {
+    const rawUrl = req.url || '';
+    const xForwardedUri = req.headers['x-forwarded-uri'] as string;
+    const xOriginalUrl = req.headers['x-original-url'] as string;
+    const xMatchedPath = req.headers['x-matched-path'] as string;
+
+    let targetPath = rawUrl;
+    if (xForwardedUri && xForwardedUri.startsWith('/api')) {
+      targetPath = xForwardedUri;
+    } else if (xOriginalUrl && xOriginalUrl.startsWith('/api')) {
+      targetPath = xOriginalUrl;
+    } else if (xMatchedPath && xMatchedPath.startsWith('/api') && !xMatchedPath.includes('index')) {
+      targetPath = xMatchedPath;
+    }
+
+    if (!targetPath.startsWith('/api') && targetPath !== '/') {
+      targetPath = '/api' + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
+    }
+
+    req.url = targetPath;
+  }
+  next();
+});
+
+// Parse JSON body only if not already parsed
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+    return next();
+  }
+  express.json({ limit: '10mb' })(req, res, (err) => {
+    if (err) req.body = {};
+    next();
+  });
+});
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Express body safety middleware for serverless
-app.use((req, res, next) => {
-  if (typeof req.body === 'string') {
-    try {
-      req.body = JSON.parse(req.body);
-    } catch (e) {
-      req.body = {};
-    }
-  }
-  if (Buffer.isBuffer(req.body)) {
-    try {
-      req.body = JSON.parse(req.body.toString('utf-8'));
-    } catch (e) {
-      req.body = {};
-    }
-  }
-  if (!req.body || typeof req.body !== 'object') {
-    req.body = {};
-  }
-  next();
-});
-
-// Normalize Vercel Serverless rewrite paths from x-matched-path
-app.use((req, res, next) => {
-  const xMatchedPath = req.headers['x-matched-path'] as string;
-  if (xMatchedPath && xMatchedPath !== '/api/index.ts' && xMatchedPath !== '/api/index') {
-    req.url = xMatchedPath;
-  } else if (isServerless && !req.url.startsWith('/api')) {
-    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
-  }
-  next();
-});
 
 const BOT_CONFIG_FILE = isServerless
   ? '/tmp/bot-config.json'
@@ -792,12 +812,17 @@ async function startServer() {
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
+    try {
+      const vitePkg = 'vite';
+      const { createServer: createViteServer } = await import(/* @vite-ignore */ vitePkg);
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.warn('Vite middleware initialization skipped:', viteErr);
+    }
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
