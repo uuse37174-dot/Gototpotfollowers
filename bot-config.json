@@ -1,0 +1,79 @@
+{
+  "id": "demo_bot",
+  "token": "",
+  "botName": "Telegram Bot Controller",
+  "botUsername": "",
+  "isConnected": false,
+  "webhookUrl": "https://ais-dev-xtrkhmhwtgcscwcpk75puu-252097129855.asia-southeast1.run.app/api/telegram/webhook/8210221044",
+  "webhookActive": true,
+  "welcomeText": "👋 Welcome to *TechNova Store*! Choose a category below to explore our products, check prices, or view specs.",
+  "rootOptionIds": [
+    "opt_electronics",
+    "opt_fashion",
+    "opt_support"
+  ],
+  "options": {
+    "opt_electronics": {
+      "id": "opt_electronics",
+      "parentId": null,
+      "buttonLabel": "💻 Electronics & Tech",
+      "responseText": "Explore our latest gadgets and electronics below. Select an item for details and order links:",
+      "imageUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80",
+      "childOptionIds": [
+        "opt_laptop",
+        "opt_phone"
+      ]
+    },
+    "opt_laptop": {
+      "id": "opt_laptop",
+      "parentId": "opt_electronics",
+      "buttonLabel": "⚡ UltraBook Pro 15\"",
+      "responseText": "🚀 *UltraBook Pro 15\"* - NextGen M3 Chip, 32GB RAM, 1TB SSD. Supercharged performance for developers & creators.\n\n💰 Price: $1,299",
+      "imageUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80",
+      "linkUrl": "https://example.com/checkout/ultrabook",
+      "linkLabel": "🛒 Buy UltraBook Now",
+      "childOptionIds": []
+    },
+    "opt_phone": {
+      "id": "opt_phone",
+      "parentId": "opt_electronics",
+      "buttonLabel": "📱 NovaPhone 12",
+      "responseText": "📱 *NovaPhone 12* - OLED 120Hz display, 108MP Quad Camera, All-Day Battery.\n\n💰 Price: $899",
+      "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop&q=80",
+      "linkUrl": "https://example.com/checkout/novaphone",
+      "linkLabel": "🛒 Buy NovaPhone Now",
+      "childOptionIds": []
+    },
+    "opt_fashion": {
+      "id": "opt_fashion",
+      "parentId": null,
+      "buttonLabel": "👕 Apparel & Accessories",
+      "responseText": "Check out our new season clothing and accessories collection:",
+      "imageUrl": "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=80",
+      "childOptionIds": [
+        "opt_hoodie"
+      ]
+    },
+    "opt_hoodie": {
+      "id": "opt_hoodie",
+      "parentId": "opt_fashion",
+      "buttonLabel": "🧥 Developer Premium Hoodie",
+      "responseText": "🔥 *Developer Premium Hoodie* - 100% Organic Cotton, Heavyweight Fleece.\n\n💰 Price: $59",
+      "imageUrl": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80",
+      "linkUrl": "https://example.com/checkout/hoodie",
+      "linkLabel": "🛍️ Order Hoodie",
+      "childOptionIds": []
+    },
+    "opt_support": {
+      "id": "opt_support",
+      "parentId": null,
+      "buttonLabel": "💬 Contact Support",
+      "responseText": "Need help with an existing order? Our customer support team is available 24/7.",
+      "linkUrl": "https://t.me/support_demo",
+      "linkLabel": "💬 Chat with Representative",
+      "childOptionIds": []
+    }
+  },
+  "updatedAt": "2026-08-11T16:40:59.931Z",
+  "welcomeImage": "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format&fit=crop&q=80"
+}

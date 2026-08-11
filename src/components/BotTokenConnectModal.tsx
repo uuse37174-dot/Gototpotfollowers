@@ -22,6 +22,13 @@ export const BotTokenConnectModal: React.FC<BotTokenConnectModalProps> = ({
   const [tokenInput, setTokenInput] = useState(config?.token || '');
   const [copiedDemo, setCopiedDemo] = useState(false);
 
+  // Sync token input when modal opens or config changes
+  useEffect(() => {
+    if (isOpen) {
+      setTokenInput(config?.token || '');
+    }
+  }, [isOpen, config]);
+
   // ESC key handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,9 +126,18 @@ export const BotTokenConnectModal: React.FC<BotTokenConnectModalProps> = ({
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800 placeholder-slate-400 outline-none transition-all"
+                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800 placeholder-slate-400 outline-none transition-all pr-20"
                 required
               />
+              {tokenInput && (
+                <button
+                  type="button"
+                  onClick={() => setTokenInput('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
+                >
+                  Clear
+                </button>
+              )}
             </div>
             <div className="flex justify-between items-center text-[11px] text-slate-500 px-1 pt-1">
               <span>Token connects directly to Telegram servers.</span>
