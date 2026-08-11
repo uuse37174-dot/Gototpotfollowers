@@ -10,9 +10,35 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const BOT_CONFIG_FILE = path.join(process.cwd(), 'bot-config.json');
+// Express body safety middleware for serverless
+app.use((req, res, next) => {
+  if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (e) {
+      // ignore
+    }
+  }
+  if (!req.body || typeof req.body !== 'object') {
+    req.body = {};
+  }
+  next();
+});
+
+// Normalize Vercel Serverless rewrite paths
+app.use((req, res, next) => {
+  if (process.env.VERCEL && !req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+  next();
+});
+
+const BOT_CONFIG_FILE = process.env.VERCEL
+  ? '/tmp/bot-config.json'
+  : path.join(process.cwd(), 'bot-config.json');
 
 // Default initial config
 const defaultConfig: BotConfig = {
@@ -76,11 +102,14 @@ const defaultConfig: BotConfig = {
 // Persistent helpers
 function loadBotConfig(): BotConfig {
   try {
-    if (fs.existsSync(BOT_CONFIG_FILE)) {
-      const data = fs.readFileSync(BOT_CONFIG_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (parsed && parsed.token) {
-        return parsed;
+    const candidatePaths = [BOT_CONFIG_FILE, '/tmp/bot-config.json', path.join(process.cwd(), 'bot-config.json')];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        const data = fs.readFileSync(p, 'utf-8');
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.token) {
+          return parsed;
+        }
       }
     }
   } catch (err) {
@@ -94,6 +123,11 @@ function saveBotConfig(config: BotConfig) {
     fs.writeFileSync(BOT_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving bot-config.json:', err);
+    try {
+      fs.writeFileSync('/tmp/bot-config.json', JSON.stringify(config, null, 2), 'utf-8');
+    } catch (tmpErr) {
+      console.error('Error saving to /tmp/bot-config.json:', tmpErr);
+    }
   }
 }
 
@@ -367,6 +401,10 @@ let updateOffset = 0;
 let isPollingLoopRunning = false;
 
 async function startTelegramLongPolling() {
+  if (process.env.VERCEL) {
+    // Serverless environments do not support background long-running while loops
+    return;
+  }
   if (isPollingLoopRunning) return;
   isPollingLoopRunning = true;
   console.log('⚡ Starting Telegram Direct Long Polling Listener...');
@@ -440,16 +478,16 @@ app.post('/api/bot/config', (req, res) => {
 
 // Connect & Validate Telegram Bot Token
 app.post('/api/telegram/connect', async (req, res) => {
-  const { token } = req.body;
-  if (!token || typeof token !== 'string') {
-    return res.status(400).json({ success: false, error: 'Telegram Bot token is required' });
-  }
-
-  const cleanToken = token.trim();
-
   try {
-    const response = await fetch(`https://api.telegram.org/bot${cleanToken}/getMe`);
-    const data = await response.json();
+    const body = req.body || {};
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
+
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Telegram Bot token is required' });
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const data = await response.json().catch(() => ({ ok: false, description: 'Failed to contact Telegram API' }));
 
     if (!data.ok) {
       return res.status(400).json({
@@ -465,7 +503,7 @@ app.post('/api/telegram/connect', async (req, res) => {
     activeBotConfig = {
       ...activeBotConfig,
       id: String(botUser.id),
-      token: cleanToken,
+      token,
       botName: botUser.first_name,
       botUsername: botUser.username || 'bot',
       isConnected: true,
@@ -474,27 +512,45 @@ app.post('/api/telegram/connect', async (req, res) => {
     };
 
     saveBotConfig(activeBotConfig);
-
     addLog('start', `Connected to Telegram Bot @${botUser.username} (${botUser.first_name}).`);
 
-    // Delete any old webhook to enable direct long polling immediately
-    try {
-      await fetch(`https://api.telegram.org/bot${cleanToken}/deleteWebhook?drop_pending_updates=false`);
-      updateOffset = 0;
-      addLog('start', `Connected to Telegram Bot @${botUser.username}. Direct polling activated.`);
-    } catch (err: any) {
-      console.error('deleteWebhook error:', err.message);
+    let isWebhookActive = false;
+
+    // On HTTPS public domains (like Vercel botpotfollowers.vercel.app), auto-register Telegram Webhook
+    if (baseUrl.startsWith('https://')) {
+      try {
+        const whRes = await fetch(
+          `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookEndpoint)}`
+        );
+        const whData = await whRes.json();
+        if (whData.ok) {
+          isWebhookActive = true;
+          activeBotConfig.webhookActive = true;
+          saveBotConfig(activeBotConfig);
+          addLog('start', `Auto-activated Webhook for HTTPS server: ${webhookEndpoint}`);
+        }
+      } catch (whErr: any) {
+        console.error('Auto setWebhook failed:', whErr.message);
+      }
+    } else {
+      // Clear old webhook on local dev to allow polling
+      try {
+        await fetch(`https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=false`);
+        updateOffset = 0;
+      } catch (e) {}
     }
 
-    res.json({
+    return res.json({
       success: true,
       bot: botUser,
-      config: activeBotConfig
+      config: activeBotConfig,
+      webhookActive: isWebhookActive
     });
   } catch (error: any) {
-    res.status(500).json({
+    console.error('Error connecting token:', error);
+    return res.status(500).json({
       success: false,
-      error: `Failed to connect to Telegram API: ${error.message}`
+      error: `Failed to connect to Telegram API: ${error?.message || 'Network error'}`
     });
   }
 });
@@ -700,8 +756,27 @@ app.post('/api/bot/chat-simulate', (req, res) => {
   res.status(400).json({ success: false, error: 'Invalid simulation action' });
 });
 
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ success: false, error: `API endpoint not found: ${req.method} ${req.originalUrl || req.url}` });
+});
+
+// Global Error Handler to guarantee clean JSON responses
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Express API Error:', err);
+  res.status(500).json({
+    success: false,
+    error: err?.message || 'Internal server error occurred.'
+  });
+});
+
 // Start Express + Vite Middleware
 async function startServer() {
+  if (process.env.VERCEL) {
+    // On Vercel, static frontend files are served directly by Vercel CDN from /dist
+    return;
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

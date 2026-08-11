@@ -73,12 +73,15 @@ export default function App() {
   const fetchConfig = async () => {
     try {
       const res = await fetch('/api/bot/config');
-      const data = await res.json();
-      if (data.success && data.config) {
-        setConfig(data.config);
-        setLogs(data.logs || []);
-        setWelcomeInput(data.config.welcomeText || '');
-        setWelcomeImgInput(data.config.welcomeImage || '');
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success && data.config) {
+          setConfig(data.config);
+          setLogs(data.logs || []);
+          setWelcomeInput(data.config.welcomeText || '');
+          setWelcomeImgInput(data.config.welcomeImage || '');
+        }
       }
     } catch (err) {
       console.error('Failed to fetch bot config', err);
@@ -138,7 +141,20 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
-      const data = await res.json();
+
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const textResponse = await res.text();
+        throw new Error(
+          res.ok
+            ? 'Server returned non-JSON response.'
+            : `Server error (${res.status}): ${textResponse.replace(/<[^>]*>?/gm, '').slice(0, 120)}`
+        );
+      }
+
       if (data.success && data.config) {
         setConfig(data.config);
         setIsConnectModalOpen(false);

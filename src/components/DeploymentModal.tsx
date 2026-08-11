@@ -30,8 +30,7 @@ export const DeploymentModal: React.FC<DeploymentModalProps> = ({ isOpen, onClos
 
   const vercelSnippet = `# 1. Import repository on Vercel (vercel.com)
 # 2. Vercel automatically detects vercel.json & builds Vite frontend + Serverless backend
-# 3. Environment Variables (optional in Vercel settings):
-# GEMINI_API_KEY = your_gemini_key`;
+# 3. No external API keys required! Just connect your Telegram Bot token in the UI.`;
 
   const dockerfileContent = `FROM node:20-alpine
 WORKDIR /app
